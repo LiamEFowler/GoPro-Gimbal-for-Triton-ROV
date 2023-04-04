@@ -24,9 +24,11 @@ unsigned long microsNow;
 float rollAngle;
 float outputAngleMicros;
 float initialPosAng;
-float Kd;
-float Kp;
-float rateError;
+float Kd = -100;      // TUNE
+float Kp = 0.09;      // TUNE
+float rateError = 0;
+float rateErrorFiltered = 0;
+float rateErrorLast = 0;
 
 // Define Water Sensor and Laser Pins
 const int water_sensor = 8;
@@ -143,9 +145,11 @@ void loop() {
       filter.updateIMU(gx, gy, gz, a.acceleration.x, a.acceleration.y, a.acceleration.z);
 
       rollAngle = filter.getPitch(); // Orientation of the IMU
+    
+      // Calculate error values for PID
       rateError = (rollAngle-lastError)/microsLoop;
-      Kp = 0.09;                                                 // TUNE
-      Kd = -100;
+      rateErrorFiltered = 0.1*rateError + 0.9*rateErrorLast; // 1st order IIR filter
+      rateErrorLast = rateErrorFiltered;
       lastError = rollAngle;
       
       //Serial.print("Roll Angle: ");
@@ -162,6 +166,7 @@ void loop() {
       //Serial.print(gy); Serial.print(", ");
       //Serial.print(gz); Serial.print(", ");
       
+      // Implement PID control
       pos = pos - (Kp*rollAngle + Kd*rateError);                           
       //Serial.print("Position: ");
       //Serial.println(pos);
